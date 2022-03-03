@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "serviceConfiguration": {
+    "apiName": "ConferenceAPI",
+    "serviceName": "AppSync",
+    "gqlSchemaPath": "C:\\Users\\pc\\OneDrive\\5 Documents\\Coding Projects\\my-amplify-app\\amplify\\backend\\api\\ConferenceAPI\\schema.graphql",
+    "defaultAuthType": {
+      "mode": "AMAZON_COGNITO_USER_POOLS",
+      "cognitoUserPoolId": "authmyamplifyapp2715e25f"
+    },
+    "conflictResolution": {},
+    "additionalAuthTypes": []
+  }
+}

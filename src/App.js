@@ -1,25 +1,113 @@
 import logo from './logo.svg';
 import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+// src/App.js
+import React from 'react';
+
+import {API, graphqlOperation, Auth} from 'aws-amplify'
+// import uuid to create a unique client ID
+// import uuid from 'uuid/v4'
+import {v4 as uuidv4} from 'uuid';
+
+import {listTalks as ListTalks} from './graphql/queries'
+// import the mutation
+import {createTalk as CreateTalk} from './graphql/mutations'
+
+import {withAuthenticator} from '@aws-amplify/ui-react';
+
+const CLIENT_ID = uuidv4()
+
+class App extends React.Component {
+    // define some state to hold the data returned from the API
+    state = {
+        name: '', description: '', speakerName: '', speakerBio: '', talks: []
+    }
+
+    // execute the query in componentDidMount
+    async componentDidMount() {
+        try {
+
+            // add this code to componentDidMount
+            const user = await Auth.currentAuthenticatedUser()
+            console.log('user:', user)
+            console.log('user info:', user.signInUserSession.idToken.payload)
+
+            // GraphQL API
+            const talkData = await API.graphql(graphqlOperation(ListTalks))
+            console.log('talkData:', talkData)
+            this.setState({
+                talks: talkData.data.listTalks.items
+            })
+        } catch (err) {
+            console.log('error fetching talks...', err)
+        }
+    }
+
+    createTalk = async () => {
+        const {name, description, speakerBio, speakerName} = this.state
+        if (name === '' || description === '' || speakerBio === '' || speakerName === '') return
+
+        const talk = {name, description, speakerBio, speakerName, clientId: CLIENT_ID}
+        const talks = [...this.state.talks, talk]
+        this.setState({
+            talks, name: '', description: '', speakerName: '', speakerBio: ''
+        })
+
+        try {
+            await API.graphql(graphqlOperation(CreateTalk, {input: talk}))
+            console.log('item created!')
+        } catch (err) {
+            console.log('error creating talk...', err)
+        }
+    }
+    onChange = (event) => {
+        console.log(event)
+        const {target: {name, value}} = event
+        this.setState({
+            [name]: value
+        })
+    }
+
+    render() {
+        return (
+            <>
+                <input
+                    name='name'
+                    onChange={this.onChange}
+                    value={this.state.name}
+                    placeholder='name'
+                />
+                <input
+                    name='description'
+                    onChange={this.onChange}
+                    value={this.state.description}
+                    placeholder='description'
+                />
+                <input
+                    name='speakerName'
+                    onChange={this.onChange}
+                    value={this.state.speakerName}
+                    placeholder='speakerName'
+                />
+                <input
+                    name='speakerBio'
+                    onChange={this.onChange}
+                    value={this.state.speakerBio}
+                    placeholder='speakerBio'
+                />
+                <button onClick={this.createTalk}>Create Talk</button>
+                {
+                    this.state.talks.map((talk, index) => (
+                        <div key={index}>
+                            <h3>{talk.speakerName}</h3>
+                            <h5>{talk.name}</h5>
+                            <p>{talk.description}</p>
+                        </div>
+                    ))
+                }
+            </>
+        )
+    }
 }
 
-export default App;
+export default withAuthenticator(App)
